@@ -1,0 +1,134 @@
+\documentclass[letterpaper,11pt]{article}
+\usepackage[round]{natbib}
+\usepackage[margin=1in,centering]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[pdftex]{hyperref}
+\hypersetup{
+    pdftitle={Bicycle reduced order observer},
+    pdfauthor={Dale L. Peterson, Oliver Z. Lee, Mont Hubbard },
+    pdfsubject={Bicycle roll angle estimation},
+    pdfkeywords={bicycle, dynamics, control}}
+
+\begin{document}
+\title{Implementation and design of a bicycle roll angle estimator using a reduced order observer}
+\author{Dale L. Peterson, Oliver Z. Lee, Mont Hubbard}
+\date{\today}
+\maketitle
+
+%\begin{abstract}
+We present the design and implementation of a roll angle estimator based on the
+Whipple bicycle model with measurements of steer, roll rate,
+steer rate, and steer torque.  The observer is a
+linear system with one state, four inputs, and one output.  We discuss how the
+speed dependent dynamics of the bicycle are taken into account by speed
+dependent gain scheduling.
+%\end{abstract}
+
+%\section{Introduction}
+A common requirement in control system design is the knowledge of the plant
+states to be controlled. If the plant is observable through the available
+measurements, an estimate of those states can be made and used in place of the
+true states when applying the feedback control law. If some states are
+directly measurable, it is possible design a reduced order
+observer~\citep{Bryson1970} with fewer states than that of the plant (a
+full order observer has the same number of states as the plant).
+%From a design and implementation perspective, this can be advantageous because
+%there may be fewer design parameters (thereby making the design simpler and
+%hopefully easier), fewer filter s
+
+The Whipple bicycle model states are lean $\phi$, steer $\delta$, lean
+rate $\dot{\phi}$, steer rate $\dot{\delta}$.  Of these, the most
+difficult to measure directly is the roll angle $\phi$. Techniques to measure
+or estimate $\phi$ include optical sensors on both sides of the rear wheel axle to
+measure the distance from the axle to the ground, mechanical trailers measuring
+roll with a potentiometer, and IMU based solutions which employ rate
+gyroscopes and/or accelerometers and Kalman filtering techniques to obtain
+orientation estimates\cite{Boniolo2008}.
+
+We have built a robotic bicycle equipped with an optical encoder to measure
+steer $\delta$ and a rate gyroscope to measure roll rate $\dot{\phi}$.  The steer
+rate $\dot{\delta}$ is computed using a simple low pass filtered derivative
+($\frac{sa}{s+a}$). Using state space matrices determined from measurements
+of bicycle physical parameters and the presumed Whipple model, we designed a
+gain scheduled LQR controller which assumes full state feedback.  For the
+purposes of the LQR controller, the states were taken to be the roll estimate
+$\hat{\phi}$ and the three direct measurements ($\delta, \dot{\phi},
+\dot{\delta}$) of the state.  We omit the details of the LQR gain selection,
+and present the design of the reduced order observer.
+
+%\section{Methods}
+With the bicycle state $x = \left[\phi, \delta, \dot{\phi},
+\dot{\delta}\right]^T$, input steer torque $T_\delta$, and measurements $z =
+[\delta, \dot{\phi}, \dot{\delta}]^T$,
+the linear state space bicycle equations are of the form:
+\begin{equation*}
+\dot{x} =\left[\begin{smallmatrix}0 & 0 & 1 & 0\\0 & 0 & 0 & 1\\a_{20} & a_{21} &
+a_{22} & a_{23}\\a_{30} & a_{31} & a_{32} & a_{33}\end{smallmatrix}\right] x +
+\left[\begin{smallmatrix}0\\0\\b_{20}\\b_{30}\end{smallmatrix}\right] T_\delta
+\qquad
+z = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
+1\end{smallmatrix}\right] x
+\end{equation*}
+Where we have assumed we can directly measure steer $\delta$, roll rate
+$\dot{\phi}$, and steer rate $\dot{\delta}$.  It is worth noting that the
+$a_{20}$ and $a_{30}$ entries of the system dynamics matrix are independent of
+forward speed, $a_{21}$ and $a_{31}$ depend on the square of forward speed, and
+the remaining $a_{ij}$ depend linearly on forward speed.  Following
+\citet*{Bryson1970}, we introduce a change of variables
+\begin{align*}
+\left[\begin{smallmatrix}w \\ z\end{smallmatrix}\right] &=
+\left[\begin{smallmatrix}k_0 & k_1 & k_2 & k_3 \\ 0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
+1\end{smallmatrix}\right] x  \quad\implies\quad
+x =
+\left[\begin{smallmatrix}\frac{1}{k_{0}} & - \frac{k_{1}}{k_{0}} & -
+  \frac{k_{2}}{k_{0}} & - \frac{k_{3}}{k_{0}}\\0 & 1 & 0 & 0\\0 & 0 & 1 & 0\\0
+  & 0 & 0 & 1\end{smallmatrix}\right]\left[\begin{smallmatrix} w \\ z\end{smallmatrix}\right]
+\end{align*}
+where $k_0\ne0$.  From this change of variables, an observer for $w$ can be
+synthesized as
+\begin{align*}
+\dot{\hat{w}} &= \frac{a_{20} k_{2} + a_{30} k_{3}}{k_{0}} \hat{w}
+ + \left(a_{21} k_{2} + a_{31} k_{3} - \frac{k_{1} \left(a_{20} k_{2} + a_{30} k_{3}\right)}{k_{0}}\right) \delta \\
+ &+ \left(a_{22} k_{2} + a_{32} k_{3} + k_{0} - \frac{k_{2} \left(a_{20} k_{2} + a_{30} k_{3}\right)}{k_{0}}\right) \dot{\phi}
+ + \left(a_{23} k_{2} + a_{33} k_{3} + k_{1} - \frac{k_{3} \left(a_{20} k_{2} + a_{30} k_{3}\right)}{k_{0}}\right) \dot{\delta} \\
+ &+ \left(b_{20} k_{2} + b_{30} k_{3}\right) T_\delta
+\end{align*}
+
+To stabilize the observer state equation we must choose $k_0, k_2, k_3$ such
+that
+\begin{equation*}
+\frac{a_{20} k_{2} + a_{30} k_{3}}{k_{0}} < 0
+\end{equation*}
+
+The selection of $k_0$, $k_2$, and $k_3$, is guided by the control systems
+design principle which suggests that observer poles be placed 3-10 times faster
+than the fastest pole of the controlled plant. Since $a_{20}$ and $a_{30}$ are
+independent of speed, the estimator eigenvalues can be arbitrarily assigned by
+selection of fixed $k_0$, $k_2$, and $k_3$ that are independent of speed.
+
+The selection of the $k_i's$ can be performed using several techniques, but all
+techniques essentially distill down to how the plant model (and the associated
+measurements of its physical) is trusted in comparison to the state
+measurements. In the full paper to be submitted, we describe in detail the
+design procedure of selecting the $k_i's$ to yield a roll angle observer with
+good performance characteristics and desirable noise rejection.  We present
+experiments of a robot bicycle with an implementation of this reduced order
+observer to estimate roll $\phi$ and use the estimated roll and state
+measurements to perform real time estimation and feedback control.  Design
+considerations and directions for future refinements are also presented.
+
+%However, the coefficients which multiply the measured states $z$ and the known
+%input $T_\delta$ do depend upon speed.  meausured states $z = [\delta$ and the
+%plant input .  Beyond this essential stability property, it is not entirely
+%clear to me how the entries of $K$ should be selected to determine the
+%coefficients that multiply the state measurements and steer torque
+%input.
+
+%\section{Conclusion}
+
+
+\bibliography{library}   % name your BibTeX data base
+\bibliographystyle{plainnat}      % mathematics and physical sciences
+
+\end{document}
