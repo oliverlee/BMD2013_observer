@@ -45,51 +45,62 @@
 
 \begin{abstract}
 This paper presents two approaches for estimating bicycle state; 1) a
-reduced-state estimator and 2) a full-state estimator. Experimental estimator
-results obtained on a robotic bicycle are presented for the full-state
-estimator; discussion of the reduced-state estimator is limited to theoretical
-background and implementation considerations. In both cases, the plant is taken
-to be the Whipple bicycle model linearized about the zero lean, zero steer
-configuration with a constant forward speed.  We also breifly discuss how the
-speed dependent dynamics were accounted for in the implementation of the
-robotic bicycle.
+reduced-state estimator and 2) a full-state estimator. Experimental results
+obtained on a robotic bicycle are presented for the full-state estimator;
+discussion of the reduced-state estimator is limited to a theoretical
+framework. In both cases, the plant is taken to be the Whipple bicycle model
+linearized about the zero lean, zero steer configuration with a constant
+forward speed.  We also breifly discuss how the speed dependent dynamics were
+accounted for in the implementation of the robotic bicycle.
 \end{abstract}
 
 \section{Introduction} \label{sec:introduction}
-A frequent requirement in control system design is knowledge of state of the
-plant to be controlled. If the plant is observable through the available
+A frequent requirement in control system design is knowledge of the state of
+the plant to be controlled. If the plant is observable through the available
 measurements, the state estimates $\hat{x}$ can be used in place of the true
 states $x$ when applying the feedback control law (i.e., $u=K\hat{x}$ instead
-of $u=Kx$). If some states are directly measurable, it is possible to design a
-reduced order estimator~\cite{Bryson1970} with fewer states than that of the
-plant (a full order observer has the same number of states as the plant).
-Reduced-state estimators typically have higher bandwidth but do not filter the
-measurements of the state so they are more susceptible to measurement noise.
-From a control system implementation perspective, reduced-state estimators can
-have lower computational cost and therefore be attractive in applications with
-constrained computational capabilities.
+of $u=Kx$). Alternatively, if some states are directly measurable, it is
+possible to design a reduced order estimator~\cite{Bryson1970} with fewer
+states than that of the plant (a full order observer has the same number of
+states as the plant).  Reduced-state estimators typically have higher bandwidth
+but do not filter the measurements of the state so they are more susceptible to
+measurement noise.  From a control system implementation perspective,
+reduced-state estimators can have lower computational cost and therefore be
+attractive in applications with constrained computational capabilities or with
+stringent bandwidth requirements.
 
-There are four states in the linearized state space equations of the Whipple
-bicycle model. The states are lean $\phi$, steer $\delta$, lean rate
-$\dot{\phi}$, steer rate $\dot{\delta}$.  Of these, the most difficult to
-measure directly is the roll angle $\phi$. Techniques to measure or estimate
-$\phi$ include optical sensors on both sides of the rear wheel axle to measure
-the distance from the axle to the ground, mechanical trailers measuring roll
-with a potentiometer, and IMU based solutions which employ rate gyroscopes
-and/or accelerometers and Kalman filtering techniques to obtain orientation
-estimates\cite{Boniolo2008}.
+The four states in the linearized state space equations of the Whipple bicycle
+model are lean $\phi$, steer $\delta$, lean rate $\dot{\phi}$, steer rate
+$\dot{\delta}$.  Of these, the most difficult to measure directly $\phi$.
+Techniques to measure or estimate $\phi$ include optical sensors on both sides
+of the rear wheel axle to measure the distance from the axle to the ground,
+mechanical trailers measuring lean with a potentiometer or encoder, and IMU
+based solutions which employ rate gyroscopes and/or accelerometers and Kalman
+filtering techniques to obtain orientation estimates\cite{Boniolo2008}.
 
-We have built a robotic bicycle equipped optical encoders to measure the steer
-angle $\delta$ and the wheel angles $\theta_r$ and $\theta_f$.  Additionally, a
-MEMS rate gyroscope fixed to the rear frame measures roll rate $\dot{\phi}$.
-The bicycle is equipped a rear hub motor to control the speed and a steer motor
-to balance the bicycle. Using state space matrices determined from measurements
-of bicycle physical parameters and the presumed Whipple model, we designed a
-gain scheduled LQR controller which assumes full state feedback. We omit the
-details of the LQR gain selection, and focus instead on the design of the state
+We constructed a robotic bicycle to conduct system identification experiments,
+without a human rider, for the purpose of experimentally validating the Whipple
+bicycle model. This required the implementation of a stabilizing state feedback
+controller and by extension, a state estimator. The bicycle was equipped with
+optical encoders to measure $\delta$ and the wheel angles $\theta_r$ and
+$\theta_f$; the rear wheel angle measurement was differentiated numerically to
+obtain the wheel rate (and hence, the forward speed). A MEMS rate gyroscope
+fixed to the rear bicycle frame was used to measure roll rate $\dot{\phi}$. The
+bicycle was also equipped with a rear hub motor to control the speed and a
+steer motor to turn the fork relative to the frame (and hence balance the
+bicycle). Using state space matrices determined from measurements of bicycle
+physical parameters and the presumed Whipple model, we designed a gain
+scheduled LQR controller which assumes full state feedback. We omit the details
+of the LQR gain selection, and focus instead on the design of the state
 estimator.
 
-This paper is organized as follows. 
+This paper is organized as follows. \hyperref[sec:methods]{Section 2} describes
+the design of the reduced-state and full-state estimators.
+\hyperref[sec:results]{Section 3} presents results obtained for the full-state
+estimator for a single run of the robotic bicycle at \SI{2.0}{\m\per\s}. We
+discuss the estimator performance in \hyperref[sec:discussion]{Section 4} and
+summarize our findings as well as give thoughts for future work in
+\hyperref[sec:conclusion]{Section 5}.
 
 \section{Methods} \label{sec:methods}
 \subsection{Reduced-state estimator} \label{reducedstate}
@@ -145,14 +156,16 @@ selection of fixed $k_0$, $k_2$, and $k_3$ that are independent of speed.
 The selection of the $k_i's$ can be performed using several techniques, but all
 techniques essentially distill down to how the plant model (and the associated
 measurements of its physical) is trusted in comparison to the state
-measurements. In the full paper to be submitted, we describe in detail the
-design procedure of selecting the $k_i's$ to yield a roll angle observer with
-good performance characteristics and desirable noise rejection.  We present
-experiments of a robot bicycle with an implementation of this reduced order
-observer to estimate roll $\phi$ and use the estimated roll and state
-measurements to perform real time estimation and feedback control. Design
-considerations and directions for future refinements are also presented.
+measurements.
 
+%In the full paper to be submitted, we describe in detail the
+%design procedure of selecting the $k_i's$ to yield a roll angle observer with
+%good performance characteristics and desirable noise rejection.  We present
+%experiments of a robot bicycle with an implementation of this reduced order
+%observer to estimate roll $\phi$ and use the estimated roll and state
+%measurements to perform real time estimation and feedback control. Design
+%considerations and directions for future refinements are also presented.
+%
 %However, the coefficients which multiply the measured states $z$ and the known
 %input $T_\delta$ do depend upon speed.  meausured states $z = [\delta$ and the
 %plant input .  Beyond this essential stability property, it is not entirely
@@ -184,7 +197,7 @@ considerations and directions for future refinements are also presented.
       y axis style=red!75!black
     ]
     \addplot[red] table[x=time, y=v]{\runzero}; \label{measured_v}
-    \addplot[blue] table[x=time, y=v_c]{\runzero}; \label{measured_v}
+    \addplot[blue] table[x=time, y=v_c]{\runzero}; \label{commanded_v}
     \end{axis}
   \end{tikzpicture}
   \caption{test}
