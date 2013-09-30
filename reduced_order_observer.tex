@@ -173,7 +173,66 @@ measurements.
 %coefficients that multiply the state measurements and steer torque
 %input.
 
-\subsection{Full-state estimator}
+\subsection{Full-state estimator} \label{fullstate}
+Alternatively, a full order estimator can be used to reconstruct the entire
+state vector, including measured states. For an observable system, a state
+observer can be described by the following equations:
+\begin{equation*}
+\dot{\hat{x}} = A \hat{x} + B T_\delta + L \left(y - \hat{y}\right)
+\end{equation*}
+\begin{equation*}
+\hat{y} = C \hat{x}
+\end{equation*}
+Where $A$ and $B$ are given explicitly in \autoref{reducedstate}, C is defined as
+\begin{equation*}
+C = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{smallmatrix}\right]
+\end{equation*}
+and $\hat{x}$, $\hat{y}$ are the estimates of state, measurements respectively.
+Note that for this system, the measurements are independent of input steer
+torque.
+
+If estimator error is defined to be
+\begin{equation*}
+e = \hat{x} - x
+\qquad
+\dot{e} = \dot{\hat{x}} - \dot{x}
+\end{equation*}
+which can be rewritten as
+\begin{equation*}
+\dot{e} = \left(A - LC\right) \hat{x} + B T_\delta + L y - \left(A x + B T_\delta\right)
+= \left(A - LC\right) e
+\end{equation*}
+The error in the estimator will converge to zero asymptotically if
+\begin{equation*}
+Re\left(\sigma\left(A - LC\right)\right) < 0
+\end{equation*}
+
+After computing the gain K for full state feedback, the closed-loop estimator poles are picked to be
+the estimator gain L was computed using the Matlab place command with the
+desired closed loop pole locations to be
+\begin{equation*}
+p_0 = 3 min\left(Re\left(\sigma\left(A + BK\right)\right)\right),
+\qquad
+p_1 = p_0 - 0.2,
+\qquad
+p_2 = p_1 - 0.2,
+\qquad
+p_3 = p_2 - 0.2.
+\end{equation*}
+Here we use the same design principle as before and place estimator poles 3
+times faster than the slowest pole of the controlled plant, ensuring the
+convergence of the estimator is faster than the controller dynamics. The other
+3 poles are assigned arbitrarily to be smaller than $p_0$.  By choosing all the
+poles to be on the real axis, any oscillation in estimator state convergence is
+avoided.
+
+Calculating the gain L is done using the MATLAB \verb|place| command. The \verb|place|
+command uses an algorithm as described in \cite{Kautsky1985}. Since the pole
+placement problem is underdetermined for multivariable systems, the algorithm
+uses the extra degrees of freedom to determine a robust solution for L that
+minimizes sensitivities of the desired poles to perturbations in the system and
+gain matrices. Thus the estimator will converge despite a small amount of
+modeling error of the system.
 
 
 \section{Results} \label{sec:results}
