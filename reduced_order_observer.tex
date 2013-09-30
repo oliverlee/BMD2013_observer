@@ -1,63 +1,98 @@
 \documentclass[letterpaper,11pt]{article}
-\usepackage[round]{natbib}
 \usepackage[margin=1in,centering]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage[pdftex]{hyperref}
-\hypersetup{
+\usepackage[
+    abbreviate=false,
+    backend=biber,
+    backref=true,
+    sortcites=true,
+    sorting=nyt,
+    sortlocale=en_US,
+    maxnames=10,
+    style=numeric-verb
+]{biblatex}
+\addbibresource{library.bib}
+\usepackage{siunitx}
+\usepackage{pgfplots}
+\pgfplotsset{
+  compat=newest,
+  compat/show suggested version=false,
+  every axis legend/.append style={
+    draw=none
+  },
+  every axis/.append style={
+    no markers,
+    enlargelimits=false,
+    grid=major
+  }
+}
+\usepackage[
+    colorlinks=true,
+    pdfencoding=auto,
     pdftitle={Bicycle reduced order observer},
     pdfauthor={Dale L. Peterson, Oliver Z. Lee, Mont Hubbard },
     pdfsubject={Bicycle roll angle estimation},
-    pdfkeywords={bicycle, dynamics, control}}
+    pdfkeywords={bicycle, dynamics, control}
+    xetex
+]{hyperref}
 
 \begin{document}
-\title{Implementation and design of a bicycle roll angle estimator using a reduced order observer}
+\title{Implementation and design of a bicycle state estimator}
 \author{Dale L. Peterson, Oliver Z. Lee, Mont Hubbard}
 \date{\today}
 \maketitle
 
-%\begin{abstract}
-We present the design and implementation of a roll angle estimator based on the
-Whipple bicycle model with measurements of steer, roll rate,
-steer rate, and steer torque.  The observer is a
-linear system with one state, four inputs, and one output.  We discuss how the
-speed dependent dynamics of the bicycle are taken into account by speed
-dependent gain scheduling.
-%\end{abstract}
+\begin{abstract}
+This paper presents two approaches for estimating bicycle state; 1) a
+reduced-state estimator and 2) a full-state estimator. Experimental estimator
+results obtained on a robotic bicycle are presented for the full-state
+estimator; discussion of the reduced-state estimator is limited to theoretical
+background and implementation considerations. In both cases, the plant is taken
+to be the Whipple bicycle model linearized about the zero lean, zero steer
+configuration with a constant forward speed.  We also breifly discuss how the
+speed dependent dynamics were accounted for in the implementation of the
+robotic bicycle.
+\end{abstract}
 
-%\section{Introduction}
-A common requirement in control system design is the knowledge of the plant
-states to be controlled. If the plant is observable through the available
-measurements, an estimate of those states can be made and used in place of the
-true states when applying the feedback control law. If some states are
-directly measurable, it is possible design a reduced order
-observer~\citep{Bryson1970} with fewer states than that of the plant (a
-full order observer has the same number of states as the plant).
-%From a design and implementation perspective, this can be advantageous because
-%there may be fewer design parameters (thereby making the design simpler and
-%hopefully easier), fewer filter s
+\section{Introduction} \label{sec:introduction}
+A frequent requirement in control system design is knowledge of state of the
+plant to be controlled. If the plant is observable through the available
+measurements, the state estimates $\hat{x}$ can be used in place of the true
+states $x$ when applying the feedback control law (i.e., $u=K\hat{x}$ instead
+of $u=Kx$). If some states are directly measurable, it is possible to design a
+reduced order estimator~\cite{Bryson1970} with fewer states than that of the
+plant (a full order observer has the same number of states as the plant).
+Reduced-state estimators typically have higher bandwidth but do not filter the
+measurements of the state so they are more susceptible to measurement noise.
+From a control system implementation perspective, reduced-state estimators can
+have lower computational cost and therefore be attractive in applications with
+constrained computational capabilities.
 
-The Whipple bicycle model states are lean $\phi$, steer $\delta$, lean
-rate $\dot{\phi}$, steer rate $\dot{\delta}$.  Of these, the most
-difficult to measure directly is the roll angle $\phi$. Techniques to measure
-or estimate $\phi$ include optical sensors on both sides of the rear wheel axle to
-measure the distance from the axle to the ground, mechanical trailers measuring
-roll with a potentiometer, and IMU based solutions which employ rate
-gyroscopes and/or accelerometers and Kalman filtering techniques to obtain
-orientation estimates\cite{Boniolo2008}.
+There are four states in the linearized state space equations of the Whipple
+bicycle model. The states are lean $\phi$, steer $\delta$, lean rate
+$\dot{\phi}$, steer rate $\dot{\delta}$.  Of these, the most difficult to
+measure directly is the roll angle $\phi$. Techniques to measure or estimate
+$\phi$ include optical sensors on both sides of the rear wheel axle to measure
+the distance from the axle to the ground, mechanical trailers measuring roll
+with a potentiometer, and IMU based solutions which employ rate gyroscopes
+and/or accelerometers and Kalman filtering techniques to obtain orientation
+estimates\cite{Boniolo2008}.
 
-We have built a robotic bicycle equipped with an optical encoder to measure
-steer $\delta$ and a rate gyroscope to measure roll rate $\dot{\phi}$.  The steer
-rate $\dot{\delta}$ is computed using a simple low pass filtered derivative
-($\frac{sa}{s+a}$). Using state space matrices determined from measurements
+We have built a robotic bicycle equipped optical encoders to measure the steer
+angle $\delta$ and the wheel angles $\theta_r$ and $\theta_f$.  Additionally, a
+MEMS rate gyroscope fixed to the rear frame measures roll rate $\dot{\phi}$.
+The bicycle is equipped a rear hub motor to control the speed and a steer motor
+to balance the bicycle. Using state space matrices determined from measurements
 of bicycle physical parameters and the presumed Whipple model, we designed a
-gain scheduled LQR controller which assumes full state feedback.  For the
-purposes of the LQR controller, the states were taken to be the roll estimate
-$\hat{\phi}$ and the three direct measurements ($\delta, \dot{\phi},
-\dot{\delta}$) of the state.  We omit the details of the LQR gain selection,
-and present the design of the reduced order observer.
+gain scheduled LQR controller which assumes full state feedback. We omit the
+details of the LQR gain selection, and focus instead on the design of the state
+estimator.
 
-%\section{Methods}
+This paper is organized as follows. 
+
+\section{Methods} \label{sec:methods}
+\subsection{Reduced-state estimator} \label{reducedstate}
 With the bicycle state $x = \left[\phi, \delta, \dot{\phi},
 \dot{\delta}\right]^T$, input steer torque $T_\delta$, and measurements $z =
 [\delta, \dot{\phi}, \dot{\delta}]^T$,
@@ -75,7 +110,7 @@ $\dot{\phi}$, and steer rate $\dot{\delta}$.  It is worth noting that the
 $a_{20}$ and $a_{30}$ entries of the system dynamics matrix are independent of
 forward speed, $a_{21}$ and $a_{31}$ depend on the square of forward speed, and
 the remaining $a_{ij}$ depend linearly on forward speed.  Following
-\citet*{Bryson1970}, we introduce a change of variables
+\cite{Bryson1970}, we introduce a change of variables
 \begin{align*}
 \left[\begin{smallmatrix}w \\ z\end{smallmatrix}\right] &=
 \left[\begin{smallmatrix}k_0 & k_1 & k_2 & k_3 \\ 0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
@@ -115,7 +150,7 @@ design procedure of selecting the $k_i's$ to yield a roll angle observer with
 good performance characteristics and desirable noise rejection.  We present
 experiments of a robot bicycle with an implementation of this reduced order
 observer to estimate roll $\phi$ and use the estimated roll and state
-measurements to perform real time estimation and feedback control.  Design
+measurements to perform real time estimation and feedback control. Design
 considerations and directions for future refinements are also presented.
 
 %However, the coefficients which multiply the measured states $z$ and the known
@@ -125,10 +160,42 @@ considerations and directions for future refinements are also presented.
 %coefficients that multiply the state measurements and steer torque
 %input.
 
-%\section{Conclusion}
+\subsection{Full-state estimator}
 
 
-\bibliography{library}   % name your BibTeX data base
-\bibliographystyle{plainnat}      % mathematics and physical sciences
+\section{Results} \label{sec:results}
+\begin{figure}
+  \pgfplotsset{set layers}
+  \pgfplotstableread{data/000_time_series_data_t20_t30-decimated.txt}\runzero
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      y axis style/.style={
+      yticklabel style=#1,
+      ylabel style=#1,
+      y axis line style=#1,
+      ytick style=#1
+      },
+      scale only axis,
+      axis y line*=left,
+      axis x line*=bottom,
+      xlabel=Time (\si{\s}),
+      ylabel=\si{\m\per\s},
+      y axis style=red!75!black
+    ]
+    \addplot[red] table[x=time, y=v]{\runzero}; \label{measured_v}
+    \addplot[blue] table[x=time, y=v_c]{\runzero}; \label{measured_v}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{test}
+  \label{rb:fig:run000a}
+\end{figure}
+
+\section{Discussion} \label{sec:discussion}
+
+\section{Conclusion} \label{sec:conclusion}
+
+\printbibliography
 
 \end{document}
+
