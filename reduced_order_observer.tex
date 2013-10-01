@@ -234,7 +234,7 @@ errors in the system.
 A number of experiments were conducted with the robotic
 bicycle~\cite{Peterson2013}. The balancing robotic bicycle is visible in
 \autoref{balancing}. Representative estimator results during an experimental
-run with a commanded speed of \SI{2.0}{\m\per\s} is shown in
+run with a commanded speed of \SI{2.0}{\m\per\s} are shown in
 \autoref{fig:run000}. This speed is well below the stable speed range of the
 uncontrolled robotic bicycle and wouldn't have been possible without active
 stabilization.
@@ -287,10 +287,10 @@ stabilization.
 
 \section{Discussion} \label{sec:discussion}
 The full-state estimator worked sufficiently well for the state feedback law to
-stabilize the bicycle outside of its stable speed range. However, it is clear
-from \autoref{fig:run000} that the steer rate estimate $\hat{\dot{\delta}}$ was
-not accurate. For example, at $t=\SI{25.0}{\s}$, the slope of the $\delta$ plot
-is clearly negative, yet $\hat{\dot{\delta}}$ is positive at that time.
+stabilize the bicycle outside its stable speed range. However, it is clear from
+\autoref{fig:run000} that the steer rate estimate $\hat{\dot{\delta}}$ was not
+accurate. For example, at $t=\SI{25.0}{\s}$, the slope of the $\delta$ plot is
+clearly negative, yet $\hat{\dot{\delta}}$ is positive at that time.
 
 Besides the poor estimate of $\hat{\dot{\delta}}$, the other state estimates
 seem reasonable.  The mean lean angle estimate $\mu_{\hat{\phi}} =
@@ -300,9 +300,9 @@ the run. The lean rate estimate $\hat{\dot{\phi}}$ closely follows the lean
 rate measurement $\dot{\phi}$ but with slightly lower noise magnitudes.
 
 \section{Conclusion} \label{sec:conclusion}
-The state estimate, along with a LQR full-state feedback gain, was sufficient
-to stabilize the robotic bicycle outside of the stable speed range. More tuning
-is needed to improve the estimate of steer rate. Additionally, a direct
+The state estimate, along with an LQR full-state feedback gain, was sufficient
+to stabilize the robotic bicycle outside the stable speed range. More tuning is
+needed to improve the estimate of steer rate. Additionally, a direct
 measurement of the lean angle to which the lean angle estimate can be compared
 would yield valuable information about the estimator performance. Lean angle is
 the most heavily weighted state in the LQR gain so reducing lean angle
