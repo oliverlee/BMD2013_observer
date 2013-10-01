@@ -62,19 +62,19 @@ accounted for in the implementation of the robotic bicycle.
 \end{abstract}
 
 \section{Introduction} \label{sec:introduction}
-A frequent requirement in control system design is knowledge of the state of
-the plant to be controlled. If the plant is observable through the available
-measurements, the state estimates $\hat{x}$ can be used in place of the true
-states $x$ when applying the feedback control law (i.e., $u=K\hat{x}$ instead
-of $u=Kx$). Alternatively, if some states are directly measurable, it is
-possible to design a reduced-state estimator~\cite{Bryson1970} with fewer
-states than that of the plant (a full-state estimator has the same number of
-states as the plant).  Reduced-state estimators typically have higher bandwidth
-but do not filter the measurements of the state so they are more susceptible to
-measurement noise.  From a control system implementation perspective,
-reduced-state estimators can have lower computational cost and therefore be
-attractive in applications with constrained computational capabilities or with
-stringent bandwidth requirements.
+A frequent requirement in control system design is knowledge of the state.  If
+the plant is observable through the available measurements, the state estimates
+$\hat{x}$ can be used in place of the true states $x$ when applying the
+feedback control law (i.e., $u=K\hat{x}$ instead of $u=Kx$). Alternatively, if
+some states are directly measurable, it is possible to design a reduced-state
+estimator~\cite{Bryson1970} with fewer states than that of the plant (a
+full-state estimator has the same number of states as the plant).
+Reduced-state estimators typically have higher bandwidth but do not filter the
+measurements of the state so they are more susceptible to measurement noise.
+From a control system implementation perspective, reduced-state estimators can
+have lower computational cost and therefore be attractive in applications with
+constrained computational capabilities or with stringent bandwidth
+requirements.
 
 The four states in the linearized state space equations of the Whipple bicycle
 model~\cite{Meijaard2007} are lean $\phi$, steer $\delta$, lean rate $\dot{\phi}$, steer rate
@@ -170,8 +170,7 @@ selection of fixed $k_0$, $k_2$, and $k_3$ that are independent of speed.
 
 The choice of $k_0, k_2, k_3$ which results in a specified estimator pole is
 not unique. The effect of sensor measurement noise will be influenced by the
-choice of the $k_i$'s. Thus care must be taken when selecting the $k_i$'s to ensure
-that noise is not amplified. The transfer functions from the three measurements to
+choice of the $k_i$'s. The transfer functions from the three measurements to
 the estimated lean (i.e., the first row of the estimator output equation in
 \autoref{eq:cov}) should be examined to verify that sufficient noise
 attenuation is achieved for the chosen $k_0$, $k_2$, and $k_3$.
@@ -185,7 +184,7 @@ estimator can be implemented through the following equations:
 y &= \left[\begin{smallmatrix}0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{smallmatrix}\right] x = C x
 \end{align*}
 where $\hat{x}$ is the state estimate, $A$ and $B$ are given explicitly in
-\autoref{reducedstate}, and the measurements are $y = \left[\delta,
+\autoref{sec:methods}, and the measurements are $y = \left[\delta,
 \dot{\phi}\right]^T$.  Note that the measurements do not depend directly on
 input steer torque.
 
@@ -226,7 +225,7 @@ state convergence is avoided.
 
 Calculating the gain L is done using the MATLAB \verb|place| command which uses
 an algorithm described in \cite{Kautsky1985}. Since the pole placement problem
-is under-determined for multi-variable systems, the algorithm uses the extra
+is under-determined for multi-variable systems, \verb|place| uses the extra
 degrees of freedom to determine a robust solution for L that minimizes
 sensitivities of the desired poles to perturbations in the system and gain
 matrices. Thus the estimator will converge as desired despite small modelling
