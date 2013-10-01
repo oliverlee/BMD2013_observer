@@ -50,7 +50,7 @@ obtained on a robotic bicycle are presented for the full-state estimator;
 discussion of the reduced-state estimator is limited to a theoretical
 framework. In both cases, the plant is taken to be the Whipple bicycle model
 linearized about the zero lean, zero steer configuration with a constant
-forward speed.  We also breifly discuss how the speed dependent dynamics were
+forward speed.  We also briefly discuss how the speed dependent dynamics were
 accounted for in the implementation of the robotic bicycle.
 \end{abstract}
 
@@ -70,10 +70,10 @@ attractive in applications with constrained computational capabilities or with
 stringent bandwidth requirements.
 
 The four states in the linearized state space equations of the Whipple bicycle
-model are lean $\phi$, steer $\delta$, lean rate $\dot{\phi}$, steer rate
-$\dot{\delta}$.  Of these, the most difficult to measure directly $\phi$.
-Techniques to measure or estimate $\phi$ include optical sensors on both sides
-of the rear wheel axle to measure the distance from the axle to the ground,
+model~\cite{Meijaard2007} are lean $\phi$, steer $\delta$, lean rate $\dot{\phi}$, steer rate
+$\dot{\delta}$.  Of these, the most difficult to measure directly is $\phi$.
+Techniques to calculate or estimate $\phi$ include optical sensors on both sides
+of the rear wheel axle to measure the differential distance from the axle to the ground,
 mechanical trailers measuring lean with a potentiometer or encoder, and IMU
 based solutions which employ rate gyroscopes and/or accelerometers and Kalman
 filtering techniques to obtain orientation estimates\cite{Boniolo2008}.
@@ -88,7 +88,7 @@ obtain the wheel rate (and hence, the forward speed). A MEMS rate gyroscope
 fixed to the rear bicycle frame was used to measure roll rate $\dot{\phi}$. The
 bicycle was also equipped with a rear hub motor to control the speed and a
 steer motor to turn the fork relative to the frame (and hence balance the
-bicycle). Using state space matrices determined from measurements of bicycle
+bicycle by steering). Using state space matrices determined from measurements of bicycle
 physical parameters and the presumed Whipple model, we designed a gain
 scheduled LQR controller which assumes full state feedback. We omit the details
 of the LQR gain selection, and focus instead on the design of the state
@@ -104,9 +104,9 @@ summarize our findings as well as give thoughts for future work in
 
 \section{Methods} \label{sec:methods}
 The basis for the estimator and control system design is the Whipple bicycle
-model~\cite{Whipple1899}. The physical parameters of the robotic bicycle were
+model~\cite{Whipple1899}~\cite{Meijaard2007} . The physical parameters of the robotic bicycle were
 measured following the approach developed in~\cite{Moore2010b}.  The linearized
-equations of motion for the bicycle can be written in state space form as
+equations of motion for the bicycle at constant forward speed can be written in state space form as
 \begin{align*}
   \dot{x} &= A x + B T_\delta \\
           &= \left[\begin{smallmatrix}0 & 0 & 1 & 0\\0 & 0 & 0 & 1\\a_{20} & a_{21} &
@@ -121,9 +121,9 @@ square of forward speed, and the remaining $a_{ij}$ depend linearly on forward
 speed.
 
 \subsection{Reduced-state estimator} \label{reducedstate}
-If steer torque $T_\delta$ is known and that measurements of $\delta,
-\dot{\phi}, \dot{\delta}$ are available, then the measurement equations are of
-the form
+If steer torque $T_\delta$ is known and measurements of $\delta,
+\dot{\phi}, and \dot{\delta}$ are available, then the equation relating the measurements $z$ 
+to the states $x$ is 
 \begin{equation*}
 z = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
 1\end{smallmatrix}\right] x.
@@ -157,33 +157,34 @@ that
 
 The selection of $k_0$, $k_2$, and $k_3$, is guided by the control systems
 design principle which suggests that observer poles be placed 3-10 times faster
-than the fastest pole of the controlled plant. Since $a_{20}$ and $a_{30}$ are
+than the fastest pole of the closed-loop controlled plant. Since $a_{20}$ and $a_{30}$ are
 independent of speed, the estimator eigenvalues can be arbitrarily assigned by
 selection of fixed $k_0$, $k_2$, and $k_3$ that are independent of speed.
 
 The choice of $k_0, k_2, k_3$ which results in a specified estimator pole is
 not unique. The effect of sensor measurement noise will be influenced by the
-choice of the $k_i$'s, care must be taken when selecting the $k_i$'s to ensure
-that noise is amplified. The transfer functions from the three measurements to
+choice of the $k_i$'s. Thus care must be taken when selecting the $k_i$'s to ensure
+that noise is not amplified. The transfer functions from the three measurements to
 the estimated lean (i.e., the first row of the estimator output equation in
 \autoref{eq:cov}) should be examined to verify that sufficient noise
-attenuation is achieved.
+attenuation is achieved for the chosen $k_0$, $k_2$, and $k_3$.
 
 \subsection{Full-state estimator} \label{fullstate}
-Alternatively, a full order estimator can be used to reconstruct the entire
-state vector, including measured states. For an observable system, a state
-observer can be described by the following equations:
+Alternatively, a full-order estimator can be used to reconstruct the entire
+state vector, even including measured states. If the system is observable, a state
+observer can be implemented through the following equations:
 \begin{equation*}
 \dot{\hat{x}} = A \hat{x} + B T_\delta + L \left(y - \hat{y}\right)
 \end{equation*}
 \begin{equation*}
 \hat{y} = C \hat{x}
 \end{equation*}
-Where $A$ and $B$ are given explicitly in \autoref{reducedstate}, C is defined as
+where $A$ and $B$ are given explicitly in \autoref{reducedstate}, $y = \left[\delta, \dot{\phi}\right]^T$, 
+i.e. C is defined as
 \begin{equation*}
 C = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{smallmatrix}\right]
 \end{equation*}
-and $\hat{x}$, $\hat{y}$ are the estimates of state, measurements respectively.
+and $\hat{x}$, $\hat{y}$ are the estimates of states and the measurements respectively.
 Note that for this system, the measurements are independent of input steer
 torque.
 
@@ -198,37 +199,38 @@ which can be rewritten as
 \dot{e} = \left(A - LC\right) \hat{x} + B T_\delta + L y - \left(A x + B T_\delta\right)
 = \left(A - LC\right) e
 \end{equation*}
-The error in the estimator will converge to zero asymptotically if
+then the error in the estimator will converge to zero asymptotically if
 \begin{equation*}
 Re\left(\sigma\left(A - LC\right)\right) < 0
 \end{equation*}
 
-After computing the gain K for full state feedback, the closed-loop estimator poles are picked to be
-the estimator gain L was computed using the Matlab place command with the
-desired closed loop pole locations to be
+After computing the gain K for full state feedback, the closed-loop estimator poles are 
+chosen to be significantly faster than the fastest eigenvalue of $A+BK$ with 
+repeated pole locations avoided. Specifically
 \begin{equation*}
 p_0 = 3 min\left(Re\left(\sigma\left(A + BK\right)\right)\right),
 \qquad
-p_1 = p_0 - 0.2,
+$x = \left[\phi, \delta, \dot{\phi}, \dot{\delta}\right]^T$
+p_1 = p_0 - 0.2 sec^-1,
 \qquad
-p_2 = p_1 - 0.2,
+p_2 = p_1 - 0.2 sec^-1,
 \qquad
-p_3 = p_2 - 0.2.
+p_3 = p_2 - 0.2 sec^-1.
 \end{equation*}
 Here we use the same design principle as before and place estimator poles 3
 times faster than the slowest pole of the controlled plant, ensuring the
 convergence of the estimator is faster than the controller dynamics. The other
-3 poles are assigned arbitrarily to be smaller than $p_0$.  By choosing all the
+3 poles are assigned arbitrarily to be marginally more negative than $p_0$.  By choosing all the
 poles to be on the real axis, any oscillation in estimator state convergence is
 avoided.
 
-Calculating the gain L is done using the MATLAB \verb|place| command. The \verb|place|
-command uses an algorithm as described in \cite{Kautsky1985}. Since the pole
+Calculating the gain L is done using the MATLAB \verb|place| command which uses an 
+algorithm described in \cite{Kautsky1985}. Since the pole
 placement problem is underdetermined for multivariable systems, the algorithm
 uses the extra degrees of freedom to determine a robust solution for L that
 minimizes sensitivities of the desired poles to perturbations in the system and
-gain matrices. Thus the estimator will converge despite a small amount of
-modeling error of the system.
+gain matrices. Thus the estimator will converge as desired despite small
+modeling errors in the system.
 
 
 \section{Results} \label{sec:results}
@@ -245,6 +247,9 @@ modeling error of the system.
   \caption{test}
   \label{rb:fig:run000a}
 \end{figure}
+
+Add Meijaard and Peterson references
+Arthur Bryson is misspelled
 
 \section{Discussion} \label{sec:discussion}
 
