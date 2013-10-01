@@ -10,7 +10,8 @@
     sorting=nyt,
     sortlocale=en_US,
     maxnames=10,
-    style=numeric-verb
+    style=numeric-verb,
+    url=false
 ]{biblatex}
 \addbibresource{library.bib}
 \usepackage{siunitx}
@@ -24,15 +25,18 @@
   every axis/.append style={
     no markers,
     enlargelimits=false,
-    grid=major
+    grid=major,
+    scale only axis,
+    axis on top,
+    height=2.5in, width=2.5in
   }
 }
 \usepackage[
     colorlinks=true,
     pdfencoding=auto,
-    pdftitle={Bicycle reduced order observer},
+    pdftitle={Design and implementation of a bicycle state estimator},
     pdfauthor={Dale L. Peterson, Oliver Z. Lee, Mont Hubbard },
-    pdfsubject={Bicycle roll angle estimation},
+    pdfsubject={Bicycle state estimation},
     pdfkeywords={bicycle, dynamics, control}
     xetex
 ]{hyperref}
@@ -80,19 +84,19 @@ filtering techniques to obtain orientation estimates\cite{Boniolo2008}.
 
 We constructed a robotic bicycle to conduct system identification experiments,
 without a human rider, for the purpose of experimentally validating the Whipple
-bicycle model. This required the implementation of a stabilizing state feedback
-controller and by extension, a state estimator. The bicycle was equipped with
-optical encoders to measure $\delta$ and the wheel angles $\theta_r$ and
-$\theta_f$; the rear wheel angle measurement was differentiated numerically to
-obtain the wheel rate (and hence, the forward speed). A MEMS rate gyroscope
-fixed to the rear bicycle frame was used to measure roll rate $\dot{\phi}$. The
-bicycle was also equipped with a rear hub motor to control the speed and a
-steer motor to turn the fork relative to the frame (and hence balance the
-bicycle by steering). Using state space matrices determined from measurements of bicycle
-physical parameters and the presumed Whipple model, we designed a gain
-scheduled LQR controller which assumes full state feedback. We omit the details
-of the LQR gain selection, and focus instead on the design of the state
-estimator.
+bicycle model\cite{Peterson2013}. This required the implementation of a
+stabilizing state feedback controller and by extension, a state estimator. The
+bicycle was equipped with optical encoders to measure $\delta$ and the wheel
+angles $\theta_r$ and $\theta_f$; the rear wheel angle measurement was
+differentiated numerically to obtain the wheel rate (and hence, the forward
+speed). A MEMS rate gyroscope fixed to the rear bicycle frame was used to
+measure roll rate $\dot{\phi}$. The bicycle was also equipped with a rear hub
+motor to control the speed and a steer motor to turn the fork relative to the
+frame (and hence balance the bicycle by steering). Using state space matrices
+determined from measurements of bicycle physical parameters and the presumed
+Whipple model, we designed a gain scheduled LQR controller which assumes full
+state feedback. We omit the details of the LQR gain selection, and focus
+instead on the design of the state estimator.
 
 This paper is organized as follows. \hyperref[sec:methods]{Section 2} describes
 the design of the reduced-state and full-state estimators.
@@ -208,14 +212,13 @@ After computing the gain K for full state feedback, the closed-loop estimator po
 chosen to be significantly faster than the fastest eigenvalue of $A+BK$ with 
 repeated pole locations avoided. Specifically
 \begin{equation*}
-p_0 = 3 min\left(Re\left(\sigma\left(A + BK\right)\right)\right),
-\qquad
-$x = \left[\phi, \delta, \dot{\phi}, \dot{\delta}\right]^T$
-p_1 = p_0 - 0.2 sec^-1,
-\qquad
-p_2 = p_1 - 0.2 sec^-1,
-\qquad
-p_3 = p_2 - 0.2 sec^-1.
+p_0 = 3 \times \min\left(Re\left(\sigma\left(A + BK\right)\right)\right),
+\quad
+p_1 = p_0 - 0.2 \si{\per\s},
+\quad
+p_2 = p_1 - 0.2 \si{\per\s},
+\quad
+p_3 = p_2 - 0.2 \si{\per\s}.
 \end{equation*}
 Here we use the same design principle as before and place estimator poles 3
 times faster than the slowest pole of the controlled plant, ensuring the
@@ -234,26 +237,79 @@ modeling errors in the system.
 
 
 \section{Results} \label{sec:results}
-\begin{figure}
-  \pgfplotsset{set layers}
+A number of experiments were conducted with the robotic
+bicycle~\cite{Peterson2013}. Representative estimator results during an
+experimental run with a commanded speed of \SI{2.0}{\m\per\s} is shown in
+\autoref{fig:run000}. This speed is well below the stable speed range of
+the uncontrolled robotic bicycle and wouldn't have been possible without active
+stabilization.
+\begin{figure}[!htbp]
+  %\pgfplotsset{set layers}
   \pgfplotstableread{data/000_time_series_data_t20_t30-decimated.txt}\runzero
   \centering
   \begin{tikzpicture}
-    \begin{axis}
-    \addplot[red] table[x=time, y=steer]{\runzero}; \label{measured_v}
-    \addplot[blue] table[x=time, y=steer_est]{\runzero}; \label{commanded_v}
+    % Lean estimate
+    \begin{axis}[xlabel=Time (\si{\s}),
+                 ylabel=Lean (\si{\radian}),name=plot1]
+    \addplot[blue] table[x=time, y=lean_est]{\runzero}; \label{lean_est}
+    \addlegendentry{$\hat{\phi}$}
+    \end{axis}
+    % Steer, steer estimate
+    \begin{axis}[xlabel=Time (\si{\s}),
+                 ylabel=Steer (\si{\radian}),name=plot2,at=(plot1.right of south east), anchor=left of south west]
+    \addplot[red] table[x=time, y=steer]{\runzero}; \label{steer}
+    \addlegendentry{$\delta$}
+    \addplot[blue] table[x=time, y=steer_est]{\runzero}; \label{steer_est}
+    \addlegendentry{$\hat{\delta}$}
+    \end{axis}
+    % Steer rate, steer rate estimate
+    \begin{axis}[xlabel=Time (\si{\s}),
+                 ylabel=Steer rate (\si{\radian\per\s}),name=plot4, at=(plot2.below south west), anchor=above north west]
+    \addplot[red] table[x=time, y=steer_rate]{\runzero}; \label{steer_rate}
+    \addlegendentry{$\dot{\delta}$}
+    \addplot[blue] table[x=time, y=steer_rate_est]{\runzero}; \label{steer_rate_est}
+    \addlegendentry{$\hat{\dot{\delta}}$}
+    \end{axis}
+    % Lean rate, lean rate estimate
+    \begin{axis}[xlabel=Time (\si{\s}),
+                 ylabel=Lean rate (\si{\radian\per\s}),name=plot3, at=(plot4.left of south west), anchor=right of south east]
+    \addplot[red] table[x=time, y=gyro_x]{\runzero}; \label{lean_rate}
+    \addlegendentry{$\dot{\phi}$}
+    \addplot[blue] table[x=time, y=lean_rate_est]{\runzero}; \label{lean_rate_est}
+    \addlegendentry{$\hat{\dot{\phi}}$}
     \end{axis}
   \end{tikzpicture}
-  \caption{test}
-  \label{rb:fig:run000a}
+  \caption{Estimator and measurement response during an experiment conducted at
+    \SI{2.0}{\m\per\s}. No direct measurement of lean was available to compare
+    with lean estimate.}
+  \label{fig:run000}
 \end{figure}
 
-Add Meijaard and Peterson references
-Arthur Bryson is misspelled
-
 \section{Discussion} \label{sec:discussion}
+The full-state estimator worked sufficiently well for the state feedback law to
+stabilize the bicycle outside of its stable speed range. However, it is clear
+from \autoref{fig:run000} that the steer rate estimate $\hat{\dot{\delta}}$ was
+not accurate. For example, at $t=\SI{25.0}{\s}$, the slope of the $\delta$ plot
+is clearly negative, yet $\hat{\dot{\delta}}$ is positive at that time.
+
+Besides the poor estimate of $\hat{\dot{\delta}}$, the other state estimates
+seem reasonable.  The mean lean angle estimate $\mu_{\hat{\phi}} =
+\SI{0.002}{\radian}$ over the time range presented is in agreement with our
+observations that the bicycle turned slightly to the right over the course of
+the run. The lean rate estimate $\hat{\dot{\phi}}$ closely follows the lean
+rate measurement $\dot{\phi}}$ but with slightly lower noise magnitudes.
 
 \section{Conclusion} \label{sec:conclusion}
+The state estimate, along with a LQR full-state feedback gain, was sufficient
+to stabilize the robotic bicycle outside of the stable speed range. More tuning
+is needed to improve the estimate of steer rate. Additionally, a direct
+measurement of the lean angle to which the lean angle estimate can be compared
+would yield valuable information about the estimator performance. Lean angle is
+the most heavily weighted state in the LQR gain so reducing lean angle
+estimation error is especially desirable. Experimental testing with the
+reduced-state estimator is needed to determine whether the potential increase
+in bandwidth would be beneficial to balancing at speeds lower than
+\SI{1.0}{\m\per\s}.
 
 \printbibliography
 
