@@ -2,6 +2,7 @@
 \usepackage[margin=1in,centering]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{graphicx}
 \usepackage[
     abbreviate=false,
     backend=biber,
@@ -64,8 +65,8 @@ the plant to be controlled. If the plant is observable through the available
 measurements, the state estimates $\hat{x}$ can be used in place of the true
 states $x$ when applying the feedback control law (i.e., $u=K\hat{x}$ instead
 of $u=Kx$). Alternatively, if some states are directly measurable, it is
-possible to design a reduced order estimator~\cite{Bryson1970} with fewer
-states than that of the plant (a full order observer has the same number of
+possible to design a reduced-state estimator~\cite{Bryson1970} with fewer
+states than that of the plant (a full-state estimator has the same number of
 states as the plant).  Reduced-state estimators typically have higher bandwidth
 but do not filter the measurements of the state so they are more susceptible to
 measurement noise.  From a control system implementation perspective,
@@ -125,9 +126,9 @@ square of forward speed, and the remaining $a_{ij}$ depend linearly on forward
 speed.
 
 \subsection{Reduced-state estimator} \label{reducedstate}
-If steer torque $T_\delta$ is known and measurements of $\delta,
-\dot{\phi}, and \dot{\delta}$ are available, then the equation relating the measurements $z$ 
-to the states $x$ is 
+If steer torque $T_\delta$ is known and measurements of $\delta, \dot{\phi}$,
+and $\dot{\delta}$ are available, then the equation relating the measurements
+$z$ to the states $x$ is
 \begin{equation*}
 z = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
 1\end{smallmatrix}\right] x.
@@ -144,7 +145,7 @@ x =
 \label{eq:cov}
 \end{align}
 where $k_0\ne0$. The equation on the right is the estimator output equation.
-From this change of variables, an observer for $w$ can be synthesized as
+From this change of variables, an estimator for $w$ can be synthesized as
 \begin{align*}
 \dot{\hat{w}} &= \frac{a_{20} k_{2} + a_{30} k_{3}}{k_{0}} \hat{w}
  + \left(a_{21} k_{2} + a_{31} k_{3} - \frac{k_{1} \left(a_{20} k_{2} + a_{30} k_{3}\right)}{k_{0}}\right) \delta \\
@@ -153,14 +154,14 @@ From this change of variables, an observer for $w$ can be synthesized as
  &+ \left(b_{20} k_{2} + b_{30} k_{3}\right) T_\delta
 \end{align*}
 
-To stabilize the observer state equation we must choose $k_0, k_2, k_3$ such
+To stabilize the estimator state equation we must choose $k_0, k_2, k_3$ such
 that
 \begin{equation*}
 \frac{a_{20} k_{2} + a_{30} k_{3}}{k_{0}} < 0
 \end{equation*}
 
 The selection of $k_0$, $k_2$, and $k_3$, is guided by the control systems
-design principle which suggests that observer poles be placed 3-10 times faster
+design principle which suggests that estimator poles be placed 3-10 times faster
 than the fastest pole of the closed-loop controlled plant. Since $a_{20}$ and $a_{30}$ are
 independent of speed, the estimator eigenvalues can be arbitrarily assigned by
 selection of fixed $k_0$, $k_2$, and $k_3$ that are independent of speed.
@@ -174,23 +175,17 @@ the estimated lean (i.e., the first row of the estimator output equation in
 attenuation is achieved for the chosen $k_0$, $k_2$, and $k_3$.
 
 \subsection{Full-state estimator} \label{fullstate}
-Alternatively, a full-order estimator can be used to reconstruct the entire
+Alternatively, a full-state estimator can be used to reconstruct the entire
 state vector, even including measured states. If the system is observable, a state
-observer can be implemented through the following equations:
-\begin{equation*}
-\dot{\hat{x}} = A \hat{x} + B T_\delta + L \left(y - \hat{y}\right)
-\end{equation*}
-\begin{equation*}
-\hat{y} = C \hat{x}
-\end{equation*}
-where $A$ and $B$ are given explicitly in \autoref{reducedstate}, $y = \left[\delta, \dot{\phi}\right]^T$, 
-i.e. C is defined as
-\begin{equation*}
-C = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{smallmatrix}\right]
-\end{equation*}
-and $\hat{x}$, $\hat{y}$ are the estimates of states and the measurements respectively.
-Note that for this system, the measurements are independent of input steer
-torque.
+estimator can be implemented through the following equations:
+\begin{align*}
+\dot{\hat{x}} &= A \hat{x} + B T_\delta + L \left(y - \hat{y}\right) \\
+y &= \left[\begin{smallmatrix}0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{smallmatrix}\right] x = C x
+\end{align*}
+where $\hat{x}$ is the state estimate, $A$ and $B$ are given explicitly in
+\autoref{reducedstate}, and the measurements are $y = \left[\delta,
+\dot{\phi}\right]^T$.  Note that the measurements do not depend directly on
+input steer torque.
 
 If estimator error is defined to be
 \begin{equation*}
@@ -208,9 +203,9 @@ then the error in the estimator will converge to zero asymptotically if
 Re\left(\sigma\left(A - LC\right)\right) < 0
 \end{equation*}
 
-After computing the gain K for full state feedback, the closed-loop estimator poles are 
-chosen to be significantly faster than the fastest eigenvalue of $A+BK$ with 
-repeated pole locations avoided. Specifically
+After computing the gain K for full state feedback, the closed-loop estimator
+poles are chosen to be significantly faster than the fastest eigenvalue of
+$A+BK$ with repeated pole locations avoided. Specifically
 \begin{equation*}
 p_0 = 3 \times \min\left(Re\left(\sigma\left(A + BK\right)\right)\right),
 \quad
@@ -223,28 +218,33 @@ p_3 = p_2 - 0.2 \si{\per\s}.
 Here we use the same design principle as before and place estimator poles 3
 times faster than the slowest pole of the controlled plant, ensuring the
 convergence of the estimator is faster than the controller dynamics. The other
-3 poles are assigned arbitrarily to be marginally more negative than $p_0$.  By choosing all the
-poles to be on the real axis, any oscillation in estimator state convergence is
-avoided.
+3 poles are assigned arbitrarily to be marginally more negative than $p_0$.  By
+choosing all the poles to be on the real axis, any oscillation in estimator
+state convergence is avoided.
 
-Calculating the gain L is done using the MATLAB \verb|place| command which uses an 
-algorithm described in \cite{Kautsky1985}. Since the pole
-placement problem is underdetermined for multivariable systems, the algorithm
-uses the extra degrees of freedom to determine a robust solution for L that
-minimizes sensitivities of the desired poles to perturbations in the system and
-gain matrices. Thus the estimator will converge as desired despite small
-modeling errors in the system.
-
+Calculating the gain L is done using the MATLAB \verb|place| command which uses
+an algorithm described in \cite{Kautsky1985}. Since the pole placement problem
+is under-determined for multi-variable systems, the algorithm uses the extra
+degrees of freedom to determine a robust solution for L that minimizes
+sensitivities of the desired poles to perturbations in the system and gain
+matrices. Thus the estimator will converge as desired despite small modelling
+errors in the system.
 
 \section{Results} \label{sec:results}
 A number of experiments were conducted with the robotic
-bicycle~\cite{Peterson2013}. Representative estimator results during an
-experimental run with a commanded speed of \SI{2.0}{\m\per\s} is shown in
-\autoref{fig:run000}. This speed is well below the stable speed range of
-the uncontrolled robotic bicycle and wouldn't have been possible without active
+bicycle~\cite{Peterson2013}. The balancing robotic bicycle is visible in
+\autoref{balancing}. Representative estimator results during an experimental
+run with a commanded speed of \SI{2.0}{\m\per\s} is shown in
+\autoref{fig:run000}. This speed is well below the stable speed range of the
+uncontrolled robotic bicycle and wouldn't have been possible without active
 stabilization.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{images/balancing.jpg}
+  \caption{Taking the robot bicycle on a jog.}
+  \label{balancing}
+\end{figure}
 \begin{figure}[!htbp]
-  %\pgfplotsset{set layers}
   \pgfplotstableread{data/000_time_series_data_t20_t30-decimated.txt}\runzero
   \centering
   \begin{tikzpicture}
@@ -297,7 +297,7 @@ seem reasonable.  The mean lean angle estimate $\mu_{\hat{\phi}} =
 \SI{0.002}{\radian}$ over the time range presented is in agreement with our
 observations that the bicycle turned slightly to the right over the course of
 the run. The lean rate estimate $\hat{\dot{\phi}}$ closely follows the lean
-rate measurement $\dot{\phi}}$ but with slightly lower noise magnitudes.
+rate measurement $\dot{\phi}$ but with slightly lower noise magnitudes.
 
 \section{Conclusion} \label{sec:conclusion}
 The state estimate, along with a LQR full-state feedback gain, was sufficient
@@ -310,6 +310,10 @@ estimation error is especially desirable. Experimental testing with the
 reduced-state estimator is needed to determine whether the potential increase
 in bandwidth would be beneficial to balancing at speeds lower than
 \SI{1.0}{\m\per\s}.
+
+\section{Acknowledgements}
+This paper is based on work supported by the National Science Foundation under
+Grant No. 0928339.
 
 \printbibliography
 
