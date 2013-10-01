@@ -103,26 +103,33 @@ summarize our findings as well as give thoughts for future work in
 \hyperref[sec:conclusion]{Section 5}.
 
 \section{Methods} \label{sec:methods}
-\subsection{Reduced-state estimator} \label{reducedstate}
-With the bicycle state $x = \left[\phi, \delta, \dot{\phi},
-\dot{\delta}\right]^T$, input steer torque $T_\delta$, and measurements $z =
-[\delta, \dot{\phi}, \dot{\delta}]^T$,
-the linear state space bicycle equations are of the form:
-\begin{equation*}
-\dot{x} =\left[\begin{smallmatrix}0 & 0 & 1 & 0\\0 & 0 & 0 & 1\\a_{20} & a_{21} &
+The basis for the estimator and control system design is the Whipple bicycle
+model~\cite{Whipple1899}. The physical parameters of the robotic bicycle were
+measured following the approach developed in~\cite{Moore2010b}.  The linearized
+equations of motion for the bicycle can be written in state space form as
+\begin{align*}
+  \dot{x} &= A x + B T_\delta \\
+          &= \left[\begin{smallmatrix}0 & 0 & 1 & 0\\0 & 0 & 0 & 1\\a_{20} & a_{21} &
 a_{22} & a_{23}\\a_{30} & a_{31} & a_{32} & a_{33}\end{smallmatrix}\right] x +
 \left[\begin{smallmatrix}0\\0\\b_{20}\\b_{30}\end{smallmatrix}\right] T_\delta
-\qquad
+\end{align*}
+where $x = \left[\phi, \delta, \dot{\phi}, \dot{\delta}\right]^T$ and
+$T_\delta$ is the steer torque acting between the fork and frame. It is
+worth noting that the $a_{20}$ and $a_{30}$ entries of the system dynamics
+matrix are independent of forward speed, $a_{21}$ and $a_{31}$ depend on the
+square of forward speed, and the remaining $a_{ij}$ depend linearly on forward
+speed.
+
+\subsection{Reduced-state estimator} \label{reducedstate}
+If steer torque $T_\delta$ is known and that measurements of $\delta,
+\dot{\phi}, \dot{\delta}$ are available, then the measurement equations are of
+the form
+\begin{equation*}
 z = \left[\begin{smallmatrix}0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
-1\end{smallmatrix}\right] x
+1\end{smallmatrix}\right] x.
 \end{equation*}
-Where we have assumed we can directly measure steer $\delta$, roll rate
-$\dot{\phi}$, and steer rate $\dot{\delta}$.  It is worth noting that the
-$a_{20}$ and $a_{30}$ entries of the system dynamics matrix are independent of
-forward speed, $a_{21}$ and $a_{31}$ depend on the square of forward speed, and
-the remaining $a_{ij}$ depend linearly on forward speed.  Following
-\cite{Bryson1970}, we introduce a change of variables
-\begin{align*}
+Following \cite{Bryson1970}, we introduce a change of variables
+\begin{align}
 \left[\begin{smallmatrix}w \\ z\end{smallmatrix}\right] &=
 \left[\begin{smallmatrix}k_0 & k_1 & k_2 & k_3 \\ 0 & 1 & 0 & 0\\ 0 & 0 & 1 & 0\\ 0 & 0 & 0 &
 1\end{smallmatrix}\right] x  \quad\implies\quad
@@ -130,9 +137,10 @@ x =
 \left[\begin{smallmatrix}\frac{1}{k_{0}} & - \frac{k_{1}}{k_{0}} & -
   \frac{k_{2}}{k_{0}} & - \frac{k_{3}}{k_{0}}\\0 & 1 & 0 & 0\\0 & 0 & 1 & 0\\0
   & 0 & 0 & 1\end{smallmatrix}\right]\left[\begin{smallmatrix} w \\ z\end{smallmatrix}\right]
-\end{align*}
-where $k_0\ne0$.  From this change of variables, an observer for $w$ can be
-synthesized as
+\label{eq:cov}
+\end{align}
+where $k_0\ne0$. The equation on the right is the estimator output equation.
+From this change of variables, an observer for $w$ can be synthesized as
 \begin{align*}
 \dot{\hat{w}} &= \frac{a_{20} k_{2} + a_{30} k_{3}}{k_{0}} \hat{w}
  + \left(a_{21} k_{2} + a_{31} k_{3} - \frac{k_{1} \left(a_{20} k_{2} + a_{30} k_{3}\right)}{k_{0}}\right) \delta \\
@@ -153,25 +161,13 @@ than the fastest pole of the controlled plant. Since $a_{20}$ and $a_{30}$ are
 independent of speed, the estimator eigenvalues can be arbitrarily assigned by
 selection of fixed $k_0$, $k_2$, and $k_3$ that are independent of speed.
 
-The selection of the $k_i's$ can be performed using several techniques, but all
-techniques essentially distill down to how the plant model (and the associated
-measurements of its physical) is trusted in comparison to the state
-measurements.
-
-%In the full paper to be submitted, we describe in detail the
-%design procedure of selecting the $k_i's$ to yield a roll angle observer with
-%good performance characteristics and desirable noise rejection.  We present
-%experiments of a robot bicycle with an implementation of this reduced order
-%observer to estimate roll $\phi$ and use the estimated roll and state
-%measurements to perform real time estimation and feedback control. Design
-%considerations and directions for future refinements are also presented.
-%
-%However, the coefficients which multiply the measured states $z$ and the known
-%input $T_\delta$ do depend upon speed.  meausured states $z = [\delta$ and the
-%plant input .  Beyond this essential stability property, it is not entirely
-%clear to me how the entries of $K$ should be selected to determine the
-%coefficients that multiply the state measurements and steer torque
-%input.
+The choice of $k_0, k_2, k_3$ which results in a specified estimator pole is
+not unique. The effect of sensor measurement noise will be influenced by the
+choice of the $k_i$'s, care must be taken when selecting the $k_i$'s to ensure
+that noise is amplified. The transfer functions from the three measurements to
+the estimated lean (i.e., the first row of the estimator output equation in
+\autoref{eq:cov}) should be examined to verify that sufficient noise
+attenuation is achieved.
 
 \subsection{Full-state estimator} \label{fullstate}
 Alternatively, a full order estimator can be used to reconstruct the entire
@@ -241,22 +237,9 @@ modeling error of the system.
   \pgfplotstableread{data/000_time_series_data_t20_t30-decimated.txt}\runzero
   \centering
   \begin{tikzpicture}
-    \begin{axis}[
-      y axis style/.style={
-      yticklabel style=#1,
-      ylabel style=#1,
-      y axis line style=#1,
-      ytick style=#1
-      },
-      scale only axis,
-      axis y line*=left,
-      axis x line*=bottom,
-      xlabel=Time (\si{\s}),
-      ylabel=\si{\m\per\s},
-      y axis style=red!75!black
-    ]
-    \addplot[red] table[x=time, y=v]{\runzero}; \label{measured_v}
-    \addplot[blue] table[x=time, y=v_c]{\runzero}; \label{commanded_v}
+    \begin{axis}
+    \addplot[red] table[x=time, y=steer]{\runzero}; \label{measured_v}
+    \addplot[blue] table[x=time, y=steer_est]{\runzero}; \label{commanded_v}
     \end{axis}
   \end{tikzpicture}
   \caption{test}
