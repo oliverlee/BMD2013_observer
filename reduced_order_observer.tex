@@ -114,12 +114,13 @@ The basis for the estimator and control system design is the Whipple bicycle
 model~\cite{Whipple1899}~\cite{Meijaard2007} . The physical parameters of the robotic bicycle were
 measured following the approach developed in~\cite{Moore2010b}.  The linearized
 equations of motion for the bicycle at constant forward speed can be written in state space form as
-\begin{align*}
+\begin{align}
   \dot{x} &= A x + B T_\delta \\
           &= \left[\begin{smallmatrix}0 & 0 & 1 & 0\\0 & 0 & 0 & 1\\a_{20} & a_{21} &
 a_{22} & a_{23}\\a_{30} & a_{31} & a_{32} & a_{33}\end{smallmatrix}\right] x +
 \left[\begin{smallmatrix}0\\0\\b_{20}\\b_{30}\end{smallmatrix}\right] T_\delta
-\end{align*}
+\label{eq:linsys}
+\end{align}
 where $x = \left[\phi, \delta, \dot{\phi}, \dot{\delta}\right]^T$ and
 $T_\delta$ is the steer torque acting between the fork and frame. It is
 worth noting that the $a_{20}$ and $a_{30}$ entries of the system dynamics
@@ -184,7 +185,7 @@ estimator can be implemented through the following equations:
 y &= \left[\begin{smallmatrix}0 & 1 & 0 & 0\\0 & 0 & 1 & 0\end{smallmatrix}\right] x = C x
 \end{align*}
 where $\hat{x}$ is the state estimate, $A$ and $B$ are given explicitly in
-\autoref{sec:methods}, and the measurements are $y = \left[\delta,
+\autoref{eq:linsys}, and the measurements are $y = \left[\delta,
 \dot{\phi}\right]^T$.  Note that the measurements do not depend directly on
 input steer torque.
 
